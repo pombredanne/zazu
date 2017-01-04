@@ -22,7 +22,7 @@ class TeamCityHelper(pyteamcity.TeamCity):
     def setup_root_template(self):
         """Sets up the ZazuGitHubLilyRoboticsDefault buildType template"""
         template = {
-            "name": "ZazuGitHubLilyRoboticsDefault3",
+            "name": "ZazuGitHubDefault",
             "parameters": {
                 "count": 4,
                 "property": [
@@ -114,7 +114,7 @@ class TeamCityHelper(pyteamcity.TeamCity):
                 ]
             },
             "projectId": "_Root",
-            "id": "ZazuGitHubLilyRoboticsDefault3",
+            "id": "ZazuGitHubDefault",
             "agent-requirements": {
                 "count": 0
             },
@@ -448,7 +448,7 @@ def setup_project(tc, git_url, repo_name, component):
         subproject_id = tc.setup_project(
             g.name(), g.description(), parent_project_id)['id']
         for a in g.builds().values():
-            template_id = 'ZazuGitHubLilyRoboticsDefault'
+            template_id = 'ZazuGitHubDefault'
             parameters = {
                 'architecture': a.build_arch(),
                 'goal': g.name(),
