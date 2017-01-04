@@ -3,6 +3,7 @@
 import click
 import json
 import git
+import github_helper
 import pyteamcity
 import requests
 import teamcity.messages
@@ -17,6 +18,205 @@ class TeamCityHelper(pyteamcity.TeamCity):
                                      username=username, password=password,
                                      server=address, port=port,
                                      protocol=protocol)
+
+    def setup_root_template(self):
+        """Sets up the ZazuGitHubLilyRoboticsDefault buildType template"""
+        template = {
+            "name": "ZazuGitHubLilyRoboticsDefault3",
+            "parameters": {
+                "count": 4,
+                "property": [
+                    {
+                        "name": "architecture",
+                        "value": ""
+                    },
+                    {
+                        "name": "buildType",
+                        "value": ""
+                    },
+                    {
+                        "name": "gitHubRepoPath",
+                        "value": ""
+                    },
+                    {
+                        "name": "goal",
+                        "value": ""
+                    }
+                ]
+            },
+            "settings": {
+                "count": 1,
+                "property": [
+                    {
+                        "name": "executionTimeoutMin",
+                        "value": "15"
+                    }
+                ]
+            },
+            "projectName": "<Root project>",
+            "triggers": {
+                "count": 1,
+                "trigger": [
+                    {
+                        "type": "vcsTrigger",
+                        "id": "vcsTrigger"
+                    }
+                ]
+            },
+            "templateFlag": True,
+            "steps": {
+                "count": 2,
+                "step": [
+                    {
+                        "properties": {
+                            "count": 3,
+                            "property": [
+                                {
+                                    "name": "script.content",
+                                    "value": "rm -rf %teamcity.agent.jvm.user.home%/buildEnv\nvirtualenv --system-site-packages %teamcity.agent.jvm.user.home%/buildEnv\n. %teamcity.agent.jvm.user.home%/buildEnv/bin/activate\n%teamcity.agent.jvm.user.home%\\buildEnv\\bin\\activate.bat\npip install pip==9.0.1\npip install --upgrade --force-reinstall --trusted-host pypi.lily.technology --index-url http://pypi.lily.technology:8080/simple zazu\nzazu upgrade"
+                                },
+                                {
+                                    "name": "teamcity.step.mode",
+                                    "value": "default"
+                                },
+                                {
+                                    "name": "use.custom.script",
+                                    "value": "true"
+                                }
+                            ]
+                        },
+                        "type": "simpleRunner",
+                        "id": "RUNNER_1",
+                        "name": "Install zazu"
+                    },
+                    {
+                        "properties": {
+                            "count": 3,
+                            "property": [
+                                {
+                                    "name": "script.content",
+                                    "value": ". %teamcity.agent.jvm.user.home%/buildEnv/bin/activate\n%teamcity.agent.jvm.user.home%\\buildEnv\\bin\\activate.bat\nzazu build --arch=%architecture% %goal%"
+                                },
+                                {
+                                    "name": "teamcity.step.mode",
+                                    "value": "default"
+                                },
+                                {
+                                    "name": "use.custom.script",
+                                    "value": "true"
+                                }
+                            ]
+                        },
+                        "type": "simpleRunner",
+                        "id": "RUNNER_2",
+                        "name": "Zazu build"
+                    }
+                ]
+            },
+            "projectId": "_Root",
+            "id": "ZazuGitHubLilyRoboticsDefault3",
+            "agent-requirements": {
+                "count": 0
+            },
+            "features": {
+                "count": 2,
+                "feature": [
+                    {
+                        "type": "xml-report-plugin",
+                        "id": "BUILD_EXT_1",
+                        "properties": {
+                            "count": 2,
+                            "property": [
+                                {
+                                    "name": "xmlReportParsing.reportDirs",
+                                    "value": "test_detail.xml\ntest/test_detail.xml"
+                                },
+                                {
+                                    "name": "xmlReportParsing.reportType",
+                                    "value": "gtest"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "type": "teamcity.github.status",
+                        "id": "BUILD_EXT_2",
+                        "properties": {
+                            "count": 7,
+                            "property": [
+                                {
+                                    "name": "github_report_on",
+                                    "value": "on start and finish"
+                                },
+                                {
+                                    "name": "guthub_authentication_type",
+                                    "value": "token"
+                                },
+                                {
+                                    "name": "guthub_context",
+                                    "value": "%env.TEAMCITY_PROJECT_NAME%/%env.TEAMCITY_BUILDCONF_NAME%"
+                                },
+                                {
+                                    "name": "guthub_host",
+                                    "value": "https://api.github.com/"
+                                },
+                                {
+                                    "name": "guthub_owner",
+                                    "value": "%gitHubOwner%"
+                                },
+                                {
+                                    "name": "guthub_repo",
+                                    "value": "%gitHubRepoPath%"
+                                },
+                                {
+                                    "name": "secure:github_access_token",
+                                    "value": ""
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        }
+        try:
+            ret = self.get_build_type(build_type_id=template['id'])
+            for p in template['parameters']['property']:
+                self._put_helper('buildTypes/{}/parameters/{}'.format(template['id'], p['name']), str(p['value']),
+                                 content_type='text/plain')
+            for p in template['settings']['property']:
+                self._put_helper('buildTypes/{}/settings/{}'.format(template['id'], p['name']), str(p['value']),
+                                 content_type='text/plain')
+            self.delete_and_post(ret, template, 'buildTypes', 'steps',    'step')
+            self.delete_and_post(ret, template, 'buildTypes', 'triggers', 'trigger')
+            # update all features that are not of type "teamcity.github.status", this requires special handling
+            github_feature_id = ""
+            for f in ret['features']['feature']:
+                if f['type'] != 'teamcity.github.status':
+                    self._delete_helper('buildTypes/{}/features/{}'.format(template['id'], f['id']))
+                else:
+                    github_feature_id = f['id']
+            for f in template['features']['feature']:
+                if f['type'] != 'teamcity.github.status':
+                    self._post_helper('buildTypes/{}/features'.format(template['id']), f)
+                else:
+                    if github_feature_id:
+                        for p in f['properties']['property']:
+                            if 'secure:' not in p['name']:
+                                self._put_helper('buildTypes/{}/features/{}/parameters/{}'.format(template['id'], github_feature_id, p['name']), str(p['value']),
+                                                 content_type='text/plain')
+                    else:
+                        self._post_helper('buildTypes/{}/features'.format(template['id']), f)['id']
+
+            ret = self.get_build_type(build_type_id=template['id'])
+        except pyteamcity.HTTPError:
+            ret = self._post_helper('buildTypes', template)
+        return ret
+
+    def delete_and_post(self, current, target, uri, field, subfield):
+        for p in current[field][subfield]:
+            self._delete_helper('{}/{}/{}/{}'.format(uri, target['id'], field, p['id']))
+        for p in target[field][subfield]:
+            self._post_helper('{}/{}/{}'.format(uri, target['id'], field), p)
 
     def setup_vcs_root(self, name, parent_project_id, git_url):
         vcs_root = {
@@ -168,6 +368,16 @@ class TeamCityHelper(pyteamcity.TeamCity):
                 ret.status_code, ret.text))
         return ret.json()
 
+    def _delete_helper(self, uri):
+        click.echo("DELETE {}".format(uri))
+        ret = requests.delete(str(self.base_url + '/' + uri),
+                              auth=(self.username, self.password),
+                              headers={'Accept': 'application/json'})
+        if 300 < ret.status_code >= 200:
+            raise Exception("Request returned error code {}, {}".format(
+                ret.status_code, ret.text))
+        return ret
+
     def _put_helper(self, uri, data, content_type='application/json', accept_type=None):
         if 'application/json' in content_type:
             data = json.dumps(data)
@@ -233,6 +443,7 @@ def setup_project(tc, git_url, repo_name, component):
     project_description = component.description()
     parent_project_id = tc.setup_project(project_name, project_description, None)['id']
     vcs_root_id = tc.setup_vcs_root(project_name, parent_project_id, git_url)['id']
+    organization, repo = github_helper.parse_github_url(git_url)
     for g in component.goals().values():
         subproject_id = tc.setup_project(
             g.name(), g.description(), parent_project_id)['id']
@@ -242,6 +453,7 @@ def setup_project(tc, git_url, repo_name, component):
                 'architecture': a.build_arch(),
                 'goal': g.name(),
                 'gitHubRepoPath': repo_name,
+                'gitHubOwner': organization,
                 'buildType': a.build_type()
             }
 
