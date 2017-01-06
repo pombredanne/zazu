@@ -469,7 +469,7 @@ class TeamCityBuildServer(zazu.build_server.BuildServer, pyteamcity.TeamCity):
                     'architecture': a.build_arch(),
                     'goal': g.name(),
                     'gitHubRepoPath': repo_name,
-                'gitHubOwner': organization,
+                    'gitHubOwner': organization,
                     'buildType': a.build_type()
                 }
 
