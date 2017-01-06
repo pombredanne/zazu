@@ -41,7 +41,7 @@ class TeamCityBuildServer(zazu.build_server.BuildServer, pyteamcity.TeamCity):
         return self._tc_handle
 
     def setup_root_template(self):
-        """Sets up the ZazuGitHubLilyRoboticsDefault buildType template"""
+        """Sets up the ZazuGitHubDefault buildType template"""
         template = {
             "name": "ZazuGitHubDefault",
             "parameters": {

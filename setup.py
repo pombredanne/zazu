@@ -21,7 +21,7 @@ except IOError:
 setuptools.setup(
     name='zazu',
     version=version,
-    description='A development workflow management CLI for GitHub, Jira, and TeamCity',
+    description='Zazu is a development workflow management tool that allows TeamCity, Github, and Jira to interact seamlessly',
     long_description=description,
     author='Nicholas Wiles',
     author_email='nhwiles@gmail.com',
