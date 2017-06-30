@@ -97,7 +97,7 @@ class TeamCityBuildServer(zazu.build_server.BuildServer):
                             "property": [
                                 {
                                     "name": "script.content",
-                                    "value": "rm -rf %teamcity.agent.jvm.user.home%/buildEnv\nvirtualenv --system-site-packages %teamcity.agent.jvm.user.home%/buildEnv\n. %teamcity.agent.jvm.user.home%/buildEnv/bin/activate\n%teamcity.agent.jvm.user.home%\\buildEnv\\bin\\activate.bat\npip install pip==9.0.1\npip install --upgrade --force-reinstall --trusted-host pypi.lily.technology --index-url http://pypi.lily.technology:8080/simple zazu\nzazu upgrade"
+                                    "value": "rm -rf %teamcity.agent.jvm.user.home%/buildEnv\nvirtualenv --system-site-packages %teamcity.agent.jvm.user.home%/buildEnv\n. %teamcity.agent.jvm.user.home%/buildEnv/bin/activate\n%teamcity.agent.jvm.user.home%\\buildEnv\\bin\\activate.bat\npip install pip==9.0.1\npip install --upgrade --force-reinstall zazu\nzazu upgrade"
                                 },
                                 {
                                     "name": "teamcity.step.mode",
