@@ -2,6 +2,7 @@
 """Defines helper functions for teamcity interaction"""
 import zazu.build_server
 import zazu.credential_helper
+import zazu.github_helper
 import zazu.util
 zazu.util.lazy_import(locals(), [
     'click',
@@ -15,7 +16,7 @@ __author__ = "Nicholas Wiles"
 __copyright__ = "Copyright 2016"
 
 
-class TeamCityBuildServer(zazu.build_server.BuildServer, pyteamcity.TeamCity):
+class TeamCityBuildServer(zazu.build_server.BuildServer):
     """Extends the pyteamcity.Teamcity object to expose interfaces to create projects and build configurations"""
 
     def __init__(self, address, port=80, protocol='http'):
@@ -461,7 +462,7 @@ class TeamCityBuildServer(zazu.build_server.BuildServer, pyteamcity.TeamCity):
         project_description = component.description()
         parent_project_id = self.setup_project(project_name, project_description, None)['id']
         vcs_root_id = self.setup_vcs_root(project_name, parent_project_id, git_url)['id']
-    organization, repo = github_helper.parse_github_url(git_url)
+        organization, repo = github_helper.parse_github_url(git_url)
         for g in component.goals().values():
             subproject_id = self.setup_project(
                 g.name(), g.description(), parent_project_id)['id']
